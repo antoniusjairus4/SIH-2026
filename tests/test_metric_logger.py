@@ -1,5 +1,5 @@
 """
-Unit tests for MetricLogger mathematical calculations and lock state machine.
+Unit tests and edge-case validation for MetricLogger mathematical calculations and lock state machine.
 """
 
 import math
@@ -135,6 +135,96 @@ def test_lock_state_transitions_acquisition_and_reacquisition():
     assert summary.lock_state_frame_counts[LockState.COAST.value] == 2
 
 
+def test_intermittent_detection_loss_multiple_cycles():
+    logger = MetricLogger(benchmark_name="TEST_MULTI_LOSS", source_fps=10.0)
+
+    # Cycle 1: Acquired at 0.1, lost at 0.3, restored at 0.5 (loss duration = 0.2)
+    # Cycle 2: Lost at 0.7, restored at 1.0 (loss duration = 0.3)
+    # Final unrecovered: Lost at 1.2 to 1.5 (loss duration = 0.3)
+    sequence = [
+        (LockState.SEARCH, 0.0),
+        (LockState.TRACK, 0.1),
+        (LockState.TRACK, 0.2),
+        (LockState.COAST, 0.3),     # Loss 1 start
+        (LockState.COAST, 0.4),
+        (LockState.TRACK, 0.5),     # Loss 1 end (dur=0.2)
+        (LockState.TRACK, 0.6),
+        (LockState.COAST, 0.7),     # Loss 2 start
+        (LockState.REACQUIRE, 0.8),
+        (LockState.REACQUIRE, 0.9),
+        (LockState.TRACK, 1.0),     # Loss 2 end (dur=0.3)
+        (LockState.TRACK, 1.1),
+        (LockState.COAST, 1.2),     # Loss 3 start (unrecovered at benchmark end)
+        (LockState.COAST, 1.3),
+        (LockState.SEARCH, 1.4),
+        (LockState.SEARCH, 1.5),    # End of video
+    ]
+
+    for fid, (st, t) in enumerate(sequence):
+        telem = TelemetryRecord(
+            frame_id=fid,
+            video_timestamp=t,
+            processing_latency_ms=10.0,
+            detector_status=(st == LockState.TRACK),
+            raw_x=200.0 if st == LockState.TRACK else None,
+            raw_y=200.0 if st == LockState.TRACK else None,
+            confidence=1.0 if st == LockState.TRACK else 0.0,
+            detection_method="TEST",
+            lock_state=st,
+            filtered_x=200.0 if st in (LockState.TRACK, LockState.COAST) else None,
+            filtered_y=200.0 if st in (LockState.TRACK, LockState.COAST) else None,
+            is_valid_track=(st == LockState.TRACK),
+        )
+        logger.log_frame(telem)
+
+    summary = logger.compute_summary()
+    assert summary.total_video_frames == 16
+    assert summary.target_loss_event_count == 3
+    assert summary.reacquisition_time_stats["count"] == 2
+    # Recovered reacq times: [0.2, 0.3] -> mean = 0.25
+    assert math.isclose(summary.reacquisition_time_stats["mean_s"], 0.25, abs_tol=1e-3)
+    assert math.isclose(summary.reacquisition_time_stats["min_s"], 0.2, abs_tol=1e-3)
+    assert math.isclose(summary.reacquisition_time_stats["max_s"], 0.3, abs_tol=1e-3)
+    # Total loss duration: 0.2 + 0.3 + (1.5 - 1.2 = 0.3) = 0.8s
+    assert math.isclose(summary.total_target_loss_duration_s, 0.8, abs_tol=1e-3)
+
+
+def test_full_canonical_state_transitions():
+    logger = MetricLogger(benchmark_name="TEST_CANONICAL_STATES")
+    states = [
+        LockState.SEARCH,
+        LockState.ACQUIRE,
+        LockState.TRACK,
+        LockState.COAST,
+        LockState.REACQUIRE,
+        LockState.TRACK,
+    ]
+
+    for fid, st in enumerate(states):
+        telem = TelemetryRecord(
+            frame_id=fid,
+            video_timestamp=fid * 0.1,
+            processing_latency_ms=10.0,
+            detector_status=(st in (LockState.ACQUIRE, LockState.TRACK)),
+            raw_x=100.0 if st in (LockState.ACQUIRE, LockState.TRACK) else None,
+            raw_y=100.0 if st in (LockState.ACQUIRE, LockState.TRACK) else None,
+            confidence=0.8,
+            detection_method="CANONICAL",
+            lock_state=st,
+            filtered_x=100.0 if st in (LockState.TRACK, LockState.COAST) else None,
+            filtered_y=100.0 if st in (LockState.TRACK, LockState.COAST) else None,
+            is_valid_track=(st == LockState.TRACK),
+        )
+        logger.log_frame(telem)
+
+    summary = logger.compute_summary()
+    assert summary.lock_state_frame_counts[LockState.SEARCH.value] == 1
+    assert summary.lock_state_frame_counts[LockState.ACQUIRE.value] == 1
+    assert summary.lock_state_frame_counts[LockState.TRACK.value] == 2
+    assert summary.lock_state_frame_counts[LockState.COAST.value] == 1
+    assert summary.lock_state_frame_counts[LockState.REACQUIRE.value] == 1
+
+
 def test_zero_lock_sequence():
     logger = MetricLogger(benchmark_name="TEST_ZERO_LOCK")
 
@@ -162,6 +252,61 @@ def test_zero_lock_sequence():
     assert summary.target_loss_event_count == 0
     assert summary.mean_centroid_error_px is None
     assert summary.rmse_px is None
+
+
+def test_perfect_zero_error_tracking():
+    logger = MetricLogger(benchmark_name="TEST_PERFECT")
+
+    for fid in range(20):
+        pos_x = 100.0 + fid * 2.0
+        pos_y = 200.0 + fid * 1.5
+        telem = TelemetryRecord(
+            frame_id=fid,
+            video_timestamp=fid * 0.033,
+            processing_latency_ms=10.0,
+            detector_status=True,
+            raw_x=pos_x,
+            raw_y=pos_y,
+            confidence=1.0,
+            detection_method="PERFECT",
+            lock_state=LockState.TRACK,
+            filtered_x=pos_x,
+            filtered_y=pos_y,
+            is_valid_track=True,
+        )
+        gt = GroundTruthRecord(frame_id=fid, gt_x=pos_x, gt_y=pos_y)
+        rec = logger.log_frame(telem, gt)
+        assert rec.centroid_error_px == 0.0
+
+    summary = logger.compute_summary()
+    assert summary.evaluated_frames_count == 20
+    assert summary.mean_centroid_error_px == 0.0
+    assert summary.rmse_px == 0.0
+    assert summary.max_error_px == 0.0
+    assert summary.std_dev_error_px == 0.0
+    assert summary.lock_retention_rate_pct == 100.0
+
+
+def test_large_tracking_error():
+    logger = MetricLogger(benchmark_name="TEST_LARGE_ERROR")
+    telem = TelemetryRecord(
+        frame_id=0,
+        video_timestamp=0.0,
+        processing_latency_ms=10.0,
+        detector_status=True,
+        raw_x=0.0,
+        raw_y=0.0,
+        confidence=1.0,
+        detection_method="LARGE",
+        lock_state=LockState.TRACK,
+        filtered_x=0.0,
+        filtered_y=0.0,
+        is_valid_track=True,
+    )
+    gt = GroundTruthRecord(frame_id=0, gt_x=1000.0, gt_y=1000.0)
+    rec = logger.log_frame(telem, gt)
+    expected_dist = math.sqrt(1000.0**2 + 1000.0**2)
+    assert math.isclose(rec.centroid_error_px, expected_dist, abs_tol=1e-3)
 
 
 def test_missing_ground_truth_behavior():
@@ -193,31 +338,87 @@ def test_missing_ground_truth_behavior():
     assert summary.lock_retention_rate_pct == 100.0
 
 
-def test_latency_statistics():
-    logger = MetricLogger(benchmark_name="TEST_LATENCY")
-    latencies = [10.0, 20.0, 30.0, 40.0, 50.0]
-
-    for fid, lat in enumerate(latencies):
-        telem = TelemetryRecord(
-            frame_id=fid,
-            video_timestamp=fid * 0.1,
-            processing_latency_ms=lat,
-            detector_status=True,
-            raw_x=100.0,
-            raw_y=100.0,
-            confidence=1.0,
-            detection_method="TEST",
-            lock_state=LockState.TRACK,
-            filtered_x=100.0,
-            filtered_y=100.0,
-            is_valid_track=True,
-        )
-        logger.log_frame(telem)
+def test_nan_inf_predictions_and_gt_safety():
+    logger = MetricLogger(benchmark_name="TEST_NAN_INF")
+    telem_nan = TelemetryRecord(
+        frame_id=0,
+        video_timestamp=0.0,
+        processing_latency_ms=10.0,
+        detector_status=True,
+        raw_x=float("nan"),
+        raw_y=float("nan"),
+        confidence=0.5,
+        detection_method="TEST",
+        lock_state=LockState.TRACK,
+        filtered_x=float("nan"),
+        filtered_y=float("nan"),
+        is_valid_track=True,
+    )
+    gt_inf = GroundTruthRecord(frame_id=0, gt_x=float("inf"), gt_y=100.0)
+    rec = logger.log_frame(telem_nan, gt_inf)
+    assert rec.centroid_error_px is None
 
     summary = logger.compute_summary()
-    assert summary.latency_ms_stats["min_ms"] == 10.0
-    assert summary.latency_ms_stats["max_ms"] == 50.0
-    assert summary.latency_ms_stats["median_ms"] == 30.0
-    assert summary.latency_ms_stats["mean_ms"] == 30.0
-    # 5 frames in 150 ms total = 5 / 0.150 = 33.33 FPS
-    assert math.isclose(summary.average_processing_fps, 33.33, abs_tol=0.1)
+    assert summary.evaluated_frames_count == 0
+    assert summary.mean_centroid_error_px is None
+
+
+def test_latency_and_fps_zero_and_minimal_data():
+    logger = MetricLogger(benchmark_name="TEST_EMPTY")
+
+    # 0 frames
+    summary_empty = logger.compute_summary()
+    assert summary_empty.total_video_frames == 0
+    assert summary_empty.average_processing_fps == 0.0
+    assert summary_empty.latency_ms_stats["mean_ms"] is None
+    assert summary_empty.lock_retention_rate_pct == 0.0
+    assert summary_empty.target_loss_rate_pct == 0.0
+
+    # 1 frame with 0.0 ms latency input (should be clamped safely)
+    telem_single = TelemetryRecord(
+        frame_id=0,
+        video_timestamp=0.0,
+        processing_latency_ms=0.0,
+        detector_status=True,
+        raw_x=100.0,
+        raw_y=100.0,
+        confidence=1.0,
+        detection_method="TEST",
+        lock_state=LockState.TRACK,
+        filtered_x=100.0,
+        filtered_y=100.0,
+        is_valid_track=True,
+    )
+    logger.log_frame(telem_single)
+    summary_single = logger.compute_summary()
+    assert summary_single.total_video_frames == 1
+    assert summary_single.average_processing_fps > 0.0
+    assert summary_single.latency_ms_stats["min_ms"] == 0.001
+    assert summary_single.lock_retention_rate_pct == 100.0
+
+
+def test_reset_clears_all_internal_state():
+    logger = MetricLogger(benchmark_name="TEST_RESET")
+    telem = TelemetryRecord(
+        frame_id=0,
+        video_timestamp=0.0,
+        processing_latency_ms=10.0,
+        detector_status=True,
+        raw_x=100.0,
+        raw_y=100.0,
+        confidence=1.0,
+        detection_method="TEST",
+        lock_state=LockState.TRACK,
+        filtered_x=100.0,
+        filtered_y=100.0,
+        is_valid_track=True,
+    )
+    logger.log_frame(telem, GroundTruthRecord(frame_id=0, gt_x=100.0, gt_y=100.0))
+    assert logger.total_processed_frames == 1
+
+    logger.reset()
+    assert logger.total_processed_frames == 0
+    assert len(logger.frame_records) == 0
+    summary = logger.compute_summary()
+    assert summary.total_video_frames == 0
+    assert summary.evaluated_frames_count == 0

@@ -1,5 +1,6 @@
 """
-Integration tests for Benchmark-2 runner with synthetic video generation and ground truth.
+Integration and edge-case tests for Benchmark-2 runner with synthetic video generation,
+corrupt video handling, stream edge cases, and ground-truth isolation verification.
 """
 
 import os
@@ -16,11 +17,14 @@ from src.benchmark.benchmark2_runner import (
 )
 from src.benchmark.pipeline_adapter import (
     CombinedTrackingPipeline,
+    BeaconDetectorProtocol,
+    StateEstimatorProtocol,
     MockThresholdDetector,
     MockSimpleTracker,
     NullDetector,
     NullStateEstimator,
 )
+from src.metrics.schemas import DetectionResult, TrackingResult, LockState
 
 
 def _generate_synthetic_video_and_gt(
@@ -110,10 +114,62 @@ def test_synthetic_end_to_end_benchmark2_execution():
             assert data["tracking_accuracy"]["mean_centroid_error_px"] < 1.0
 
 
+def test_single_frame_video():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        video_path, gt_path = _generate_synthetic_video_and_gt(tmpdir, num_frames=1)
+        output_results_dir = os.path.join(tmpdir, "results")
+
+        pipeline = CombinedTrackingPipeline(
+            detector=MockThresholdDetector(threshold=180),
+            state_estimator=MockSimpleTracker(coast_limit_frames=5),
+        )
+
+        runner = Benchmark2Runner(pipeline=pipeline, output_dir=output_results_dir)
+        summary, csv_path, json_path = runner.run_benchmark(
+            video_path=video_path,
+            ground_truth_path=gt_path,
+        )
+
+        assert summary.total_video_frames == 1
+        assert summary.evaluated_frames_count == 1
+        assert summary.lock_retention_rate_pct == 100.0
+        assert summary.acquisition_time_s == 0.0
+        assert summary.std_dev_error_px == 0.0
+        assert os.path.exists(csv_path)
+        assert os.path.exists(json_path)
+
+
 def test_missing_video_raises_error():
     runner = Benchmark2Runner()
     with pytest.raises(FileNotFoundError):
         runner.run_benchmark("non_existent_video_path_9999.mp4")
+
+
+def test_invalid_non_video_file_raises_error():
+    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".mp4") as f:
+        f.write("This is a plain text file, not a valid MP4 video container.")
+        invalid_video_path = f.name
+
+    try:
+        runner = Benchmark2Runner()
+        with pytest.raises(VideoProcessingError):
+            runner.run_benchmark(invalid_video_path)
+    finally:
+        if os.path.exists(invalid_video_path):
+            os.remove(invalid_video_path)
+
+
+def test_empty_zero_byte_video_raises_error():
+    with tempfile.NamedTemporaryFile("wb", delete=False, suffix=".mp4") as f:
+        empty_video_path = f.name
+
+    try:
+        runner = Benchmark2Runner()
+        with pytest.raises(VideoProcessingError):
+            runner.run_benchmark(empty_video_path)
+    finally:
+        if os.path.exists(empty_video_path):
+            os.remove(empty_video_path)
 
 
 def test_execution_without_ground_truth():
@@ -162,3 +218,77 @@ def test_zero_lock_run_with_null_pipeline():
         assert summary.lock_retention_rate_pct == 0.0
         assert summary.acquisition_time_s is None
         assert summary.mean_centroid_error_px is None
+
+
+# =========================================================================
+# Spy Detector & Tracker to strictly verify Ground Truth Isolation Rule
+# =========================================================================
+
+class SpyDetector(BeaconDetectorProtocol):
+    def __init__(self):
+        self.calls = []
+
+    def detect(self, frame: np.ndarray, frame_id: int, timestamp: float) -> DetectionResult:
+        # Record all arguments received
+        self.calls.append({
+            "frame_type": type(frame),
+            "frame_shape": frame.shape if frame is not None else None,
+            "frame_id": frame_id,
+            "timestamp": timestamp,
+        })
+        return DetectionResult(detected=True, centroid_x=320.0, centroid_y=240.0, confidence=1.0)
+
+
+class SpyTracker(StateEstimatorProtocol):
+    def __init__(self):
+        self.calls = []
+
+    def update(self, detection: DetectionResult, dt: float) -> TrackingResult:
+        # Record all arguments received
+        self.calls.append({
+            "detection_type": type(detection),
+            "detection_detected": detection.detected,
+            "dt": dt,
+        })
+        return TrackingResult(
+            lock_state=LockState.TRACK,
+            filtered_x=detection.centroid_x,
+            filtered_y=detection.centroid_y,
+            is_valid_track=True,
+        )
+
+    def reset(self) -> None:
+        pass
+
+
+def test_ground_truth_strict_isolation_rule():
+    """
+    CRITICAL TEST: Ensures ground truth data is NEVER passed into the detector or state estimator.
+    Ground truth must remain strictly an evaluation-only artifact.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        video_path, gt_path = _generate_synthetic_video_and_gt(tmpdir, num_frames=5)
+
+        spy_det = SpyDetector()
+        spy_trk = SpyTracker()
+        pipeline = CombinedTrackingPipeline(detector=spy_det, state_estimator=spy_trk)
+
+        runner = Benchmark2Runner(pipeline=pipeline, output_dir=os.path.join(tmpdir, "results"))
+        runner.run_benchmark(video_path=video_path, ground_truth_path=gt_path)
+
+        assert len(spy_det.calls) == 5
+        for call in spy_det.calls:
+            # Verify detector receives ONLY frame image, frame_id, timestamp
+            assert call["frame_type"] is np.ndarray
+            assert isinstance(call["frame_id"], int)
+            assert isinstance(call["timestamp"], float)
+            assert "gt" not in call
+            assert "ground_truth" not in call
+
+        assert len(spy_trk.calls) == 5
+        for call in spy_trk.calls:
+            # Verify tracker receives ONLY DetectionResult and dt
+            assert call["detection_type"] is DetectionResult
+            assert isinstance(call["dt"], float)
+            assert "gt" not in call
+            assert "ground_truth" not in call

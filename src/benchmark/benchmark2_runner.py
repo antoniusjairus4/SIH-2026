@@ -95,7 +95,7 @@ class Benchmark2Runner:
             width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             fps = float(cap.get(cv2.CAP_PROP_FPS))
-            if fps <= 0.0 or np.isnan(fps):
+            if fps <= 0.0 or np.isnan(fps) or np.isinf(fps):
                 fps = 30.0  # Fallback to nominal 30 FPS
 
             logger.info(

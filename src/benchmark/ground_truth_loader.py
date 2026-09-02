@@ -6,6 +6,7 @@ Strictly isolated from perception and tracking modules.
 
 import os
 import csv
+import math
 import logging
 from typing import Dict, Optional, Tuple, Any
 
@@ -136,7 +137,7 @@ class GroundTruthLoader:
         """
         Finds the closest ground-truth record matching a video timestamp within tolerance.
         """
-        if not self._records_by_time:
+        if not self._records_by_time or tolerance_s < 0:
             return None
 
         # Binary search for nearest timestamp
@@ -207,9 +208,11 @@ class GroundTruthLoader:
             gt_x_idx = col_map.get("gt_x")
             if gt_x_idx is not None and gt_x_idx < len(row):
                 raw_x = row[gt_x_idx].strip()
-                if raw_x and raw_x.lower() not in {"nan", "none", "null", ""}:
+                if raw_x and raw_x.lower() not in {"nan", "none", "null", "n/a", "undefined", "?", ""}:
                     try:
-                        gt_x = float(raw_x)
+                        val = float(raw_x)
+                        if not (math.isnan(val) or math.isinf(val)):
+                            gt_x = val
                     except ValueError:
                         gt_x = None
 
@@ -218,9 +221,11 @@ class GroundTruthLoader:
             gt_y_idx = col_map.get("gt_y")
             if gt_y_idx is not None and gt_y_idx < len(row):
                 raw_y = row[gt_y_idx].strip()
-                if raw_y and raw_y.lower() not in {"nan", "none", "null", ""}:
+                if raw_y and raw_y.lower() not in {"nan", "none", "null", "n/a", "undefined", "?", ""}:
                     try:
-                        gt_y = float(raw_y)
+                        val = float(raw_y)
+                        if not (math.isnan(val) or math.isinf(val)):
+                            gt_y = val
                     except ValueError:
                         gt_y = None
 
@@ -229,9 +234,11 @@ class GroundTruthLoader:
             ts_idx = col_map.get("timestamp")
             if ts_idx is not None and ts_idx < len(row):
                 raw_ts = row[ts_idx].strip()
-                if raw_ts and raw_ts.lower() not in {"nan", "none", "null", ""}:
+                if raw_ts and raw_ts.lower() not in {"nan", "none", "null", "n/a", "undefined", "?", ""}:
                     try:
-                        ts = float(raw_ts)
+                        val = float(raw_ts)
+                        if not (math.isnan(val) or math.isinf(val)):
+                            ts = val
                     except ValueError:
                         ts = None
 

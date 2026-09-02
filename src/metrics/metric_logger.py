@@ -126,11 +126,17 @@ class MetricLogger:
                 pred_y = telemetry.raw_y
 
             if pred_x is not None and pred_y is not None:
-                dx = pred_x - ground_truth.gt_x
-                dy = pred_y - ground_truth.gt_y
-                sq_err = dx * dx + dy * dy
-                centroid_err = math.sqrt(sq_err)
-                self._centroid_errors.append(centroid_err)
+                if not (
+                    math.isnan(pred_x) or math.isnan(pred_y) or
+                    math.isinf(pred_x) or math.isinf(pred_y) or
+                    math.isnan(ground_truth.gt_x) or math.isnan(ground_truth.gt_y) or
+                    math.isinf(ground_truth.gt_x) or math.isinf(ground_truth.gt_y)
+                ):
+                    dx = pred_x - ground_truth.gt_x
+                    dy = pred_y - ground_truth.gt_y
+                    sq_err = dx * dx + dy * dy
+                    centroid_err = math.sqrt(sq_err)
+                    self._centroid_errors.append(centroid_err)
 
         # 4. Latency & Instantaneous FPS
         latency_ms = max(0.001, telemetry.processing_latency_ms)
@@ -225,7 +231,7 @@ class MetricLogger:
         # 2. Lock Performance
         track_frames = self._lock_state_counts.get(LockState.TRACK.value, 0)
         lock_retention_rate = (track_frames / total_frames * 100.0) if total_frames > 0 else 0.0
-        target_loss_rate = 100.0 - lock_retention_rate
+        target_loss_rate = (100.0 - lock_retention_rate) if total_frames > 0 else 0.0
 
         # Acquisition time
         if self._first_track_timestamp is not None and self._first_frame_timestamp is not None:
