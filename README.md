@@ -71,6 +71,7 @@ This project delivers a software-based virtual camera tracking system providing 
 │  - Target Dynamics: Linear, Circular, Figure-8, Random                      │
 │  - Disturbance Injector: Salt & Pepper, Gaussian, Jitter, Fog, Rain         │
 │  - Virtual PTZ Motor Model (Max Slew: 5 deg/s, >= 20Hz loop)                │
+│  - Dataset Exporter: 3,000 Synthetic Frames + Bounding Box Text Labels     │
 └──────────────┬──────────────────────────────────────────────▲───────────────┘
                │ RGB Frame (640x480)                          │ pan_delta
                │ frame_id + timestamp                         │ tilt_delta
@@ -84,9 +85,9 @@ This project delivers a software-based virtual camera tracking system providing 
                │ Raw Frame (NumPy Array)                      │
                ▼                                              │
 ┌──────────────────────────────────────────────┐              │
-│     JAIRUS: CV / CNN DETECTION ENGINE        │              │
+│   JAIRUS & AI ENGINEER: CV & CNN ENGINE      │              │
 │  - Fast Path: Median + Top-Hat + Sub-pixel   │              │
-│  - AI Path: YOLOv8n / YOLO11n ONNX Fallback  │              │
+│  - AI Fallback: Fine-Tuned YOLOv8n ONNX      │              │
 └──────────────┬───────────────────────────────┘              │
                │ Raw Coordinate (u, v) + Confidence           │
                ▼                                              │
@@ -128,6 +129,7 @@ This project delivers a software-based virtual camera tracking system providing 
   * Disturbances: Salt & Pepper (10%), Gaussian ($\sigma \le 20\text{ px}$), Poisson, camera jitter ($\pm 20\text{ px/frame}$), atmospheric fog/rain.
   * Virtual PTZ gimbal physics ($5^\circ/\text{s}$ max slew rate limit).
   * TCP Socket Server on Port 5005 streaming raw frames and receiving gimbal commands.
+  * **Synthetic Dataset Exporter:** 3,000 synthetic frames + normalized bounding box `.txt` label files for AI model training.
 
 ---
 
@@ -141,12 +143,12 @@ This project delivers a software-based virtual camera tracking system providing 
 
 ---
 
-### Module 3: Detection Engine (Classical CV + AI Fallback)
-* **Owner:** Jairus
+### Module 3: Detection Engine & AI Model Pipeline
+* **Owners:** Jairus (CV Core & Pipeline Integration) & AI Model Engineer (AI Fine-Tuning & ONNX Exporter)
 * **Tech Stack:** Python, OpenCV, NumPy, ONNX Runtime, Ultralytics (YOLOv8n)
 * **Deliverables:**
-  * **Fast Path (1 to 3 ms):** Grayscale $\rightarrow$ Median Filter ($3\times3$) $\rightarrow$ Morphological White Top-Hat ($15\times15$) $\rightarrow$ Dynamic Thresholding $\rightarrow$ Sub-pixel Center of Gravity ($C_x = M_{10}/M_{00}, C_y = M_{01}/M_{00}$).
-  * **Lightweight AI Fallback (<8 ms):** Pre-trained YOLOv8n ONNX model triggered during extreme contrast reduction (heavy fog/rain).
+  * **Fast Path (Jairus - 1 to 3 ms):** Grayscale $\rightarrow$ Median Filter ($3\times3$) $\rightarrow$ Morphological White Top-Hat ($15\times15$) $\rightarrow$ Dynamic Thresholding $\rightarrow$ Sub-pixel Center of Gravity ($C_x = M_{10}/M_{00}, C_y = M_{01}/M_{00}$).
+  * **AI Model Training & ONNX Export (AI Teammate):** Fine-tune YOLOv8n on Noorul's 3,000 synthetic frames under heavy fog/rain, export to `beacon_yolo.onnx`, and deliver the ONNX model for CPU fallback execution ($<8\text{ ms}$).
 
 ---
 
