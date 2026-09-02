@@ -1,27 +1,64 @@
 # SIH 2026 - Problem Statement 169 (ISRO)
 ## AI-Based Virtual Camera Tracking System for Coarse Alignment of Mobile Free Space Optical Communication (FSOC) Terminals
 
-**Organization / Domain:** Indian Space Research Organisation (ISRO) / Department of Space — Space Technology, Smart Automation  
-**Repository:** [SIH-2026](https://github.com/antoniusjairus4/SIH-2026)
+**Organization / Domain:** Department of Space / Indian Space Research Organisation (ISRO) — Smart Automation, Space Technology  
+**Category:** Software | **Repository:** [SIH-2026](https://github.com/antoniusjairus4/SIH-2026)
 
 ---
 
-## 📊 Evaluation Scope & Score Distribution
+## 📋 Official ISRO Evaluation Method and Criteria (100 Marks Total)
 
-| Evaluation Category | Weight | Target Metric / Deliverable |
-| :--- | :---: | :--- |
-| **Functional Live Demo + GUI** | 20% | Closed-loop tracking demo in Unity with interactive UI |
-| **Benchmark-1 (Scenarios & Error Logs)** | 30% | Performance under disturbances, CSV/JSON log generation |
-| **Benchmark-2 (Direct .mp4 Centroiding)** | 30% | Offline video centroiding pipeline without active gimbal feedback |
-| **Technical Architecture & Q&A** | 20% | Modular codebase, architecture design, and defense |
+| Evaluation Stage | Description | Evaluation Method & Criteria | Weight (%) |
+| :--- | :--- | :--- | :---: |
+| **Functional Verification** | 10-15 min live demonstration of software functionality | 1. Implementation of all mandatory functions<br>2. Operational success<br>3. Interactive GUI | **20%** |
+| **Benchmark Performance-1** | Execution under provided operational scenarios | 1. Scenario execution<br>2. Centroiding error logs<br>3. Automatically generated performance reports | **30%** |
+| **Benchmark Performance-2** | Processing pre-recorded `.mp4` video files @ 30 FPS with noise & moving beacon spot | 1. Bypass PTZ camera & process raw `.mp4`<br>2. Centroiding error comparison<br>3. Metrics: RMSE, acquisition & re-acquisition time, lock retention rate, FPS | **30%** |
+| **Technical Evaluation** | Presentation of approach, architecture, and design to ISRO evaluators | 1. Problem understanding & architecture design<br>2. Algorithm selection & AI/CV methodology<br>3. Innovation, technical documentation, Q&A | **20%** |
+
+---
+
+## 🎯 Official ISRO Parameters & Specifications Matrix
+
+| Sr. No. | Parameter | Suggested Value | Remarks |
+| :---: | :--- | :--- | :--- |
+| **Camera Parameters** | | | |
+| 1 | Screen Size (min.) | $2000 \times 2000\text{ pixels}$ | Optional: User-defined |
+| 2 | Camera Type | Monochrome, Focal Plane Array (FPA) | Optional: Colour |
+| 3 | Camera Resolution | $640 \times 480\text{ pixels}$ | Default: $640 \times 480$ (User-defined) |
+| 4 | Camera FOV | $4.0^\circ \times 3.0^\circ$ | Default: $4^\circ \times 3^\circ$ |
+| 5 | Camera Update Rate | $\ge 30\text{ Hz}$ | Minimum 30 Hz |
+| 6 | Initial Camera Position | Centre of the Screen | Default starting frame |
+| **Target Parameters** | | | |
+| 7 | Target Type | Beacon Spot | Optical laser beacon spot |
+| 8 | Number of Targets | 1 (Mandatory) | Multiple optional |
+| 9 | Target Shape | Square | Default: Square (User-defined) |
+| 10 | Target Size | $5 \times 5$ to $20 \times 20\text{ pixels}$ | Default: $10 \times 10\text{ pixels}$ |
+| 11 | Initial Target Location | User-defined | Default: Random |
+| 12 | Motion Profiles | Selectable: Linear, Circular, Figure of 8, Random | Mandatory $\ge 4$ profiles. Optional: Spiral, Sinusoidal |
+| **Camera Motion Constraints** | | | |
+| 13 | Max. Pan Speed | $5\text{ to }10^\circ/\text{s}$ | Default: $5^\circ/\text{s}$ (User-defined) |
+| 14 | Max. Tilt Speed | $5\text{ to }10^\circ/\text{s}$ | Default: $5^\circ/\text{s}$ (User-defined) |
+| 15 | Update Interval | $\ge 20\text{ Hz}$ | Target: $30\text{ Hz}$ loop |
+| **Performance Specifications** | | | |
+| 16 | Acquisition Time | $\le 2\text{ seconds}$ | Time to continuous lock |
+| 17 | Tracking Error | $\le 10\text{ pixels}$ | Max Euclidean offset from center |
+| 18 | Target Loss Rate | $< 5\%$ | $>95\%$ lock retention rate |
+| 19 | Re-acquisition Time | $\le 1\text{ second}$ | Time to re-lock after occlusion |
+| 20 | Processing Speed | $\ge 20\text{ FPS}$ | Real-time loop throughput |
+| **Disturbances & Noise** | | | |
+| 21 | Image Noise | 1. Salt & Pepper (~10%), 2. Gaussian, 3. Poisson | User Selectable (one or more) |
+| 22 | Max. Noise Std Dev | $20\text{ pixels}$ | User-defined Gaussian noise |
+| 23 | Max. Camera Jitter | $\pm 20\text{ pixels / frame}$ | User-defined camera vibration |
+| 24 | Atmospheric Disturbance| Clear, Haze, Fog, Rain, Low Light | User-defined contrast & brightness attenuation |
+| 25 | Platform Motion | $\pm 20\text{ pixels / frame (max.)}$ | Selectable (Linear default, optional circular/random) |
 
 ---
 
 ## 1. Executive Summary & Problem Formulation
 
-In Free Space Optical Communication (FSOC), high-bandwidth data transmission uses narrow-divergence laser beams. In mobile operational scenarios (satellites, aircraft, ground terminals), platform vibration, atmospheric turbulence, and high relative velocities make direct fine-beam pointing impossible without an initial wide-field **Coarse Alignment** stage.
+In Free Space Optical Communication (FSOC), data transmission uses highly directional optical laser beams. Mobile operational platforms (satellites, UAVs, ground terminals) experience platform vibration, atmospheric turbulence, and high relative velocities. Before a fine-pointing mechanism can take over, a **Coarse Alignment stage** must observe the environment, detect the remote terminal beacon, estimate its position, and adjust the pointing direction to keep the beacon within the camera Field-of-View (FOV).
 
-This project delivers an autonomous, software-driven closed-loop tracking pipeline without physical hardware dependencies. The architecture couples a high-fidelity virtual space simulation running in **Unity (C#)** with an external real-time intelligence stack running in **Python** across a decoupled TCP socket boundary (Port 5005). The system detects, identifies, filters, and centers an optical beacon under severe atmospheric turbulence, sensor noise, platform motion, and camera jitter while maintaining strict control limits and low latency.
+This project delivers a software-based virtual camera tracking system providing autonomous coarse alignment in a simulated environment without specialized physical hardware.
 
 ---
 
@@ -80,156 +117,73 @@ This project delivers an autonomous, software-driven closed-loop tracking pipeli
 
 ---
 
-## 3. Comprehensive Module Descriptions & Team Ownership
+## 3. Modular Responsibilities & Team Ownership
 
 ### Module 1: Unity Simulation & Virtual Environment
 * **Owner:** Noorul
 * **Tech Stack:** Unity Engine, C#, HLSL Compute Shaders, .NET Sockets
-* **Key Responsibilities:**
-  * **Scene Geometry & Optics:** Deep-space environment; virtual Focal Plane Array (FPA) monochrome camera running at $640 \times 480$ resolution with $4.0^\circ \times 3.0^\circ$ FOV.
-  * **Target Dynamics:** Configurable optical beacon ($5\times5$ to $20\times20\text{ px}$, default $10\times10\text{ px}$). 4 kinematic models: Straight Line, Circular, Figure-8, and Random Brownian Walk.
-  * **Disturbance Injector:** Modular shaders for 10% Salt & Pepper, Gaussian ($\sigma \le 20\text{ px}$), Poisson noise, camera jitter ($\pm 20\text{ px/frame}$), platform drift ($\pm 20\text{ px/frame}$), and atmospheric attenuation (fog, rain, low-light).
-  * **Pan-Tilt Actuator Physics:** 2-axis gimbal model with slew rate limiting (default $5^\circ/\text{s}$, adjustable to $10^\circ/\text{s}$) and angular end-stops. Loop rates: Control $\ge 20\text{ Hz}$, Camera Render $\ge 30\text{ Hz}$.
-  * **Socket Server & GUI:** Non-blocking TCP server (port 5005). Interactive GUI for real-time noise/target tuning and telemetry HUD.
-  * **Synthetic Dataset Exporter:** Script to export 3,000 labeled frames + ground-truth bounding box text files (`.txt`) for AI model fine-tuning.
+* **Deliverables:**
+  * Virtual FPA camera ($640 \times 480$, $4.0^\circ \times 3.0^\circ$ FOV, $\ge 30\text{ Hz}$).
+  * Moving target spot ($5\times5$ to $20\times20\text{ px}$) with 4 motion profiles (Linear, Circular, Figure-8, Random).
+  * Disturbances: Salt & Pepper (10%), Gaussian ($\sigma \le 20\text{ px}$), Poisson, camera jitter ($\pm 20\text{ px/frame}$), atmospheric fog/rain.
+  * Virtual PTZ gimbal physics ($5^\circ/\text{s}$ max slew rate limit).
+  * TCP Socket Server on Port 5005 streaming raw frames and receiving gimbal commands.
 
 ---
 
-### Module 2: Socket Client, Serialization & Benchmark-2 Runner
+### Module 2: Network Client, Serialization & Benchmark-2 Runner
 * **Owner:** Jeevan
 * **Tech Stack:** Python, `socket`, `struct`, `NumPy`, OpenCV (`cv2`)
-* **Key Responsibilities:**
-  * **TCP Client Socket Layer:** Multi-threaded streaming client connecting to `localhost:5005`.
-  * **Zero-Copy Ingestion:** Unpacks header (`frame_id`: 4-byte int, `timestamp`: 8-byte double) and raw RGB payload ($640\times 480\times 3 = 921,600\text{ bytes}$) into contiguous NumPy arrays with sub-millisecond overhead.
-  * **Backpressure Management:** Ring-buffer / latest-frame drop policy to eliminate phase-lag.
-  * **Command Uplink:** Serializes and sends `(pan_delta, tilt_delta)` floats back to Unity at $\ge 20\text{ Hz}$.
-  * **Benchmark-2 Offline Execution Runner:** Standalone CLI script for processing pre-recorded `.mp4` video feeds (`cv2.VideoCapture`), executing detection, and logging metrics without PTZ feedback.
+* **Deliverables:**
+  * Multi-threaded TCP client ingesting frames from `localhost:5005` at $\ge 30\text{ Hz}$ without lag.
+  * Command uplink sending `(pan_delta, tilt_delta)` floats back to Unity.
+  * **Benchmark-2 Offline Execution Runner:** Standalone CLI script reading pre-recorded `.mp4` video files, executing detection/tracking, bypassing PTZ camera, and generating accuracy logs against ground truth.
 
 ---
 
-### Module 3: Detection Engine (Classical CV + CNN Fallback)
+### Module 3: Detection Engine (Classical CV + AI Fallback)
 * **Owner:** Jairus
-* **Tech Stack:** Python, OpenCV, NumPy, ONNX Runtime, Ultralytics (YOLOv8n / YOLO11n)
-* **Key Responsibilities:**
-  * **Fast Path (Classical CV - 1 to 3 ms, >300 FPS):**
-    1. Convert $640\times 480$ frame to 8-bit single-channel grayscale.
-    2. $3\times 3$ or $5\times 5$ Median Blur (`cv2.medianBlur`) to filter 10% Salt & Pepper noise.
-    3. Morphological White Top-Hat Transform ($15\times 15$ structuring element) to remove non-uniform background haze and lighting gradients.
-    4. Dynamic thresholding for bright spot isolation.
-    5. Sub-pixel Center of Gravity (CoG) computation via spatial moments:
-       $$C_x = \frac{M_{10}}{M_{00}}, \quad C_y = \frac{M_{01}}{M_{00}}$$
-  * **Lightweight CNN Path (Degraded Weather Fallback):**
-    * Triggers when heavy fog/rain breaks contour moments ($M_{00} \approx 0$).
-    * Fine-tuned YOLOv8n ONNX model (trained on Noorul's 3,000 synthetic frames).
-    * Sub-8ms box localization and centroid extraction.
-  * **Output Contract:** `(x, y, confidence)` or `(None, None, 0.0)` during complete occlusion.
+* **Tech Stack:** Python, OpenCV, NumPy, ONNX Runtime, Ultralytics (YOLOv8n)
+* **Deliverables:**
+  * **Fast Path (1 to 3 ms):** Grayscale $\rightarrow$ Median Filter ($3\times3$) $\rightarrow$ Morphological White Top-Hat ($15\times15$) $\rightarrow$ Dynamic Thresholding $\rightarrow$ Sub-pixel Center of Gravity ($C_x = M_{10}/M_{00}, C_y = M_{01}/M_{00}$).
+  * **Lightweight AI Fallback (<8 ms):** Pre-trained YOLOv8n ONNX model triggered during extreme contrast reduction (heavy fog/rain).
 
 ---
 
 ### Module 4: State Estimator (Kalman Filter)
 * **Owner:** Dhanya
-* **Tech Stack:** Python, NumPy, SciPy
-* **Key Responsibilities:**
-  * **Kinematic State Formulation:** Constant Acceleration (CA) Discrete Kalman Filter:
-    $$\mathbf{x}_k = \begin{bmatrix} x & y & v_x & v_y & a_x & a_y \end{bmatrix}^T$$
-  * **Jitter & Vibration Rejection:** Rejects $\pm 20\text{ px/frame}$ high-frequency platform jitter via tuned measurement covariance matrix $\mathbf{R}$ and process covariance matrix $\mathbf{Q}$.
-  * **Occlusion Dead-Reckoning:** Pure prediction cycles ($\mathbf{x}_k = \mathbf{F}\mathbf{x}_{k-1}$) for up to $1.0\text{ s}$ when detection returns `None`.
-  * **Output Contract:** Filtered state tuple `(x_est, y_est, vx, vy)`.
+* **Tech Stack:** Python, NumPy, SciPy (`cv2.KalmanFilter`)
+* **Deliverables:**
+  * Constant Acceleration Discrete Kalman Filter: $\mathbf{x}_k = [x, y, v_x, v_y, a_x, a_y]^T$.
+  * Filters high-frequency camera jitter ($\pm 20\text{ px/frame}$).
+  * Occlusion Dead-Reckoning: Predicts trajectory for up to $1.0\text{ s}$ during dropped frames or cloud cover.
 
 ---
 
 ### Module 5: Pan-Tilt Control Loop & Reacquisition Engine
 * **Owner:** Jairus
 * **Tech Stack:** Python, Standard Math
-* **Key Responsibilities:**
-  * **Coordinate Transformation:** Map pixel offset from center $(320, 240)$ to angular gimbal errors:
-    $$\text{Scale}_x = \frac{4.0^\circ}{640\text{ px}} = 0.00625^\circ/\text{px}, \quad \text{Scale}_y = \frac{3.0^\circ}{480\text{ px}} = 0.00625^\circ/\text{px}$$
-    $$\Delta \theta_{\text{pan\_err}} = (x_{\text{est}} - 320.0) \times \text{Scale}_x, \quad \Delta \phi_{\text{tilt\_err}} = -(y_{\text{est}} - 240.0) \times \text{Scale}_y$$
-  * **Dual-Axis PID Controller:** Proportional, Integral, Derivative calculation with anti-windup clamping and motor slew-rate output limiting ($\le 5^\circ/\text{s}$ or $\le 0.166^\circ/\text{step}$ at $30\text{ Hz}$).
-  * **Reacquisition State Machine:** Transitions to `REACQUISITION_MODE` if lost for $>0.5\text{ s}$. Drives an Archimedean spiral search pattern outward from last known position to re-acquire target within $\le 1.0\text{ s}$.
-  * **Output Contract:** Signed `(pan_delta, tilt_delta)` floats in degrees.
+* **Deliverables:**
+  * Coordinate Transformation ($0.00625^\circ/\text{px}$ scale).
+  * Dual-Axis PID controller with anti-windup clamping and motor slew clamping ($\le 5^\circ/\text{s}$).
+  * Reacquisition State Machine: Triggers Archimedean spiral search pattern when target is lost $>0.5\text{ s}$, re-acquiring lock in $\le 1.0\text{ s}$.
 
 ---
 
-### Module 6: Performance Logger, Analytics & Unified Launcher
+### Module 6: Performance Logger, Analytics & Unified Desktop Launcher
 * **Owner:** Jairus
 * **Tech Stack:** Python, PyQt6 / Tkinter, Pandas, Matplotlib
-* **Key Responsibilities:**
-  * **Real-Time Evaluation Metrics Engine:**
-    * *Tracking Error:* Euclidean pixel offset $\sqrt{(x-320)^2 + (y-240)^2}$ ($\le 10\text{ px}$ target).
-    * *Centroiding RMSE:* Evaluated against ground-truth coordinates.
-    * *Acquisition Time:* Time from initiation to continuous stable lock ($\le 2\text{ s}$ target).
-    * *Re-acquisition Time:* Time to re-acquire lock after loss ($\le 1\text{ s}$ target).
-    * *Lock Retention Rate:* Percentage of operational frames with error $\le 10\text{ px}$ ($>95\%$ target).
-    * *Frame Throughput:* Loop processing latency and FPS ($\ge 20\text{ FPS}$ target).
-  * **Data Logging:** Synchronized `.csv` and summary `.json` report export for Benchmark-1 and Benchmark-2.
-  * **Unified Desktop Launcher:** 1-click GUI dashboard launching Unity `.exe` as a subprocess, managing Python client threads, rendering live charts, and ensuring clean cleanup on exit.
+* **Deliverables:**
+  * Real-Time Metrics Engine (Tracking Error $\le 10\text{ px}$, RMSE, Lock Retention $>95\%$, Acquisition Time $\le 2\text{ s}$, FPS $\ge 20$).
+  * Automatic `.csv` and `.json` performance log auto-generator.
+  * Unified 1-Click Desktop GUI App managing Unity `.exe` subprocess and Python telemetry pipeline.
 
 ---
 
-## 4. Official Parameter Verification Matrix
+## 📁 Official Mandatory Deliverables Checklist
 
-| Parameter | Official Specification | Implementation & Handling |
-| :--- | :--- | :--- |
-| **Screen Resolution** | $640 \times 480\text{ px}$ (min $2000 \times 2000$ canvas) | Unity FPA monochrome camera renders at $640 \times 480$. |
-| **Camera FOV** | $4.0^\circ \times 3.0^\circ$ (Configurable) | Fixed ratio $0.00625^\circ/\text{px}$ in PID error mapper. |
-| **Camera Update Rate** | $\ge 30\text{ Hz}$ | Unity camera rendering loop locked to 30–60 FPS. |
-| **Target Size** | $5 \times 5$ to $20 \times 20\text{ px}$ (Default: $10 \times 10\text{ px}$) | White Top-Hat filter kernel ($15 \times 15$) tuned to spot geometry. |
-| **Motion Profiles** | $\ge 4$ Types (Linear, Circular, Fig-8, Random) | Selectable state classes in Unity C# scripts. |
-| **Max Slew Rate** | $5\text{ to }10^\circ/\text{s}$ (Default: $5^\circ/\text{s}$) | Hard clamping bounds in PID controller output stage. |
-| **Control Update Rate** | $\ge 20\text{ Hz}$ | Python loop targets $30\text{ Hz}$ ($<33\text{ ms}$ budget). |
-| **Tracking Error** | $\le 10\text{ px}$ | Sub-pixel CoG + EKF achieves $\sim 1\text{ to }3\text{ px}$. |
-| **Target Loss Rate** | $< 5\%$ | Dual Classical CV / CNN engine maintains $>95\%$ lock. |
-| **Acquisition Time** | $\le 2\text{ seconds}$ | Fast path classical CV locks in $<3\text{ ms}$ on first frame. |
-| **Re-acquisition Time** | $\le 1\text{ second}$ | High-speed Archimedean spiral search pattern sweeps FOV. |
-| **Disturbances** | 10% S&P, Gaussian ($\sigma=20$), Jitter ($\pm 20\text{ px}$), Weather | Median filter + EKF process noise matrix reject disturbance. |
-
----
-
-## 5. Step-by-Step Team Execution Plan
-
-```mermaid
-graph TD
-    subgraph Phase 1: Zero-Dependency Modular Dev (Days 1-2)
-        P1A[Jairus: Classical Detector & PID Controller]
-        P1B[Noorul: Unity 3D Space Scene & TCP Server]
-        P1C[Jeevan: TCP Client Socket & Unpacker]
-        P1D[Dhanya: EKF State Estimator]
-    end
-
-    subgraph Phase 2: Python Brain Integration (Day 3)
-        P2A[Integrate: Socket -> CV Detector -> EKF -> PID]
-        P2B[Benchmark Pipeline Throughput: Target < 15ms]
-    end
-
-    subgraph Phase 3: Hardware-in-the-Loop Integration (Day 4)
-        P3A[Connect Python Brain to Unity via localhost:5005]
-        P3B[Live PID Tuning against 5°/s Slew Limits]
-    end
-
-    subgraph Phase 4: Disturbance Validation & AI Training (Day 5)
-        P4A[Enable Shaders: Noise, Jitter, Weather in Unity]
-        P4B[Export 3,000 Synthetic Frames]
-        P4C[Train & Fine-tune YOLOv8n ONNX Fallback]
-    end
-
-    subgraph Phase 5: Verification & Packaging (Day 6)
-        P5A[Jeevan: Test Benchmark-2 .mp4 Runner]
-        P5B[Jairus: Assemble PyQt Unified Launcher & Metrics UI]
-        P5C[Execute Benchmark-1 & Benchmark-2 Validation Runs]
-    end
-
-    P1A --> P2A
-    P1B --> P3A
-    P1C --> P2A
-    P1D --> P2A
-    P2A --> P2B
-    P2B --> P3A
-    P3A --> P3B
-    P3B --> P4A
-    P4A --> P4B
-    P4B --> P4C
-    P4C --> P5A
-    P5A --> P5B
-    P5B --> P5C
-```
+- [x] **Standalone Executable Application:** 1-Click Desktop Packaging (PyQt GUI launcher + compiled Unity executable).
+- [x] **Modular Source Code:** Clean, documented Python & C# scripts.
+- [x] **Technical Report (10-15 pages):** PDF report covering architecture, CV/AI algorithms, EKF formulation, and PID dynamics.
+- [x] **User Manual & Demo Video:** Installation guide, UI navigation, parameter configuration, and 3-5 min video demonstration.
+- [x] **Performance Logs:** Automated CSV/JSON log generator recording FPS, Acquisition Time, Average & Max Error, Lock Retention Rate, and Processing Speed.
