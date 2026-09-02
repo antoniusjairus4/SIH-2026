@@ -40,21 +40,21 @@ This project delivers an autonomous, software-driven closed-loop tracking pipeli
                │ (TCP Port 5005 @ 30Hz)                       │ (>= 20Hz)
                ▼                                              │
 ┌──────────────────────────────────────────────┐              │
-│    TEAMMATE 1: NETWORK & BENCHMARK RUNNER    │              │
+│       JEEVAN: NETWORK & BENCHMARK RUNNER     │              │
 │  - TCP Receiver / Frame Deserialization      │              │
 │  - Direct .mp4 File Mode (Benchmark-2)       │              │
 └──────────────┬───────────────────────────────┘              │
                │ Raw Frame (NumPy Array)                      │
                ▼                                              │
 ┌──────────────────────────────────────────────┐              │
-│      YOU: CV / CNN DETECTION ENGINE          │              │
+│     JAIRUS: CV / CNN DETECTION ENGINE        │              │
 │  - Fast Path: Median + Top-Hat + Sub-pixel   │              │
 │  - AI Path: YOLOv8n / YOLO11n ONNX Fallback  │              │
 └──────────────┬───────────────────────────────┘              │
                │ Raw Coordinate (u, v) + Confidence           │
                ▼                                              │
 ┌──────────────────────────────────────────────┐              │
-│     TEAMMATE 2: KALMAN STATE ESTIMATOR       │              │
+│      DHANYA: KALMAN STATE ESTIMATOR          │              │
 │  - Constant Acceleration EKF / Motion Model  │              │
 │  - Jitter Filtering (+/- 20 px/frame)        │              │
 │  - Occlusion Dead-Reckoning                  │              │
@@ -62,7 +62,7 @@ This project delivers an autonomous, software-driven closed-loop tracking pipeli
                │ Filtered State: [x, y, vx, vy]               │
                ▼                                              │
 ┌──────────────────────────────────────────────┐              │
-│     YOU: PID CONTROL & REACQUISITION         │              │
+│     JAIRUS: PID CONTROL & REACQUISITION      │              │
 │  - Pixel-to-Angle Mapping (4°x3° FOV)        │              │
 │  - Dual-Axis PID Loop with Slew-Limit Clamping│              │
 │  - Spiral Search Reacquisition State Machine │              │
@@ -71,7 +71,7 @@ This project delivers an autonomous, software-driven closed-loop tracking pipeli
                │ Diagnostic Telemetry
                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│              YOU: PERFORMANCE LOGGER & UNIFIED LAUNCHER                     │
+│            JAIRUS: PERFORMANCE LOGGER & UNIFIED LAUNCHER                    │
 │  - Real-time RMSE, Tracking Error, Lock Retention, Latency/FPS              │
 │  - Auto-generated CSV / JSON evaluation logs                                │
 │  - 1-Click Desktop Packaging (PyQt / Subprocess supervisor)                 │
@@ -96,7 +96,7 @@ This project delivers an autonomous, software-driven closed-loop tracking pipeli
 ---
 
 ### Module 2: Socket Client, Serialization & Benchmark-2 Runner
-* **Owner:** Teammate 1
+* **Owner:** Jeevan
 * **Tech Stack:** Python, `socket`, `struct`, `NumPy`, OpenCV (`cv2`)
 * **Key Responsibilities:**
   * **TCP Client Socket Layer:** Multi-threaded streaming client connecting to `localhost:5005`.
@@ -108,7 +108,7 @@ This project delivers an autonomous, software-driven closed-loop tracking pipeli
 ---
 
 ### Module 3: Detection Engine (Classical CV + CNN Fallback)
-* **Owner:** You (Lead AI/CV Engineer)
+* **Owner:** Jairus
 * **Tech Stack:** Python, OpenCV, NumPy, ONNX Runtime, Ultralytics (YOLOv8n / YOLO11n)
 * **Key Responsibilities:**
   * **Fast Path (Classical CV - 1 to 3 ms, >300 FPS):**
@@ -127,7 +127,7 @@ This project delivers an autonomous, software-driven closed-loop tracking pipeli
 ---
 
 ### Module 4: State Estimator (Kalman Filter)
-* **Owner:** Teammate 2
+* **Owner:** Dhanya
 * **Tech Stack:** Python, NumPy, SciPy
 * **Key Responsibilities:**
   * **Kinematic State Formulation:** Constant Acceleration (CA) Discrete Kalman Filter:
@@ -139,7 +139,7 @@ This project delivers an autonomous, software-driven closed-loop tracking pipeli
 ---
 
 ### Module 5: Pan-Tilt Control Loop & Reacquisition Engine
-* **Owner:** You (Lead AI/CV Engineer)
+* **Owner:** Jairus
 * **Tech Stack:** Python, Standard Math
 * **Key Responsibilities:**
   * **Coordinate Transformation:** Map pixel offset from center $(320, 240)$ to angular gimbal errors:
@@ -152,7 +152,7 @@ This project delivers an autonomous, software-driven closed-loop tracking pipeli
 ---
 
 ### Module 6: Performance Logger, Analytics & Unified Launcher
-* **Owner:** You (Lead AI/CV Engineer)
+* **Owner:** Jairus
 * **Tech Stack:** Python, PyQt6 / Tkinter, Pandas, Matplotlib
 * **Key Responsibilities:**
   * **Real-Time Evaluation Metrics Engine:**
@@ -191,10 +191,10 @@ This project delivers an autonomous, software-driven closed-loop tracking pipeli
 ```mermaid
 graph TD
     subgraph Phase 1: Zero-Dependency Modular Dev (Days 1-2)
-        P1A[You: Classical Detector & PID Controller]
+        P1A[Jairus: Classical Detector & PID Controller]
         P1B[Noorul: Unity 3D Space Scene & TCP Server]
-        P1C[Teammate 1: TCP Client Socket & Unpacker]
-        P1D[Teammate 2: EKF State Estimator]
+        P1C[Jeevan: TCP Client Socket & Unpacker]
+        P1D[Dhanya: EKF State Estimator]
     end
 
     subgraph Phase 2: Python Brain Integration (Day 3)
@@ -214,8 +214,8 @@ graph TD
     end
 
     subgraph Phase 5: Verification & Packaging (Day 6)
-        P5A[Teammate 1: Test Benchmark-2 .mp4 Runner]
-        P5B[You: Assemble PyQt Unified Launcher & Metrics UI]
+        P5A[Jeevan: Test Benchmark-2 .mp4 Runner]
+        P5B[Jairus: Assemble PyQt Unified Launcher & Metrics UI]
         P5C[Execute Benchmark-1 & Benchmark-2 Validation Runs]
     end
 
