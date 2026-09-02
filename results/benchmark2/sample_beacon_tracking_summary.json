@@ -1,0 +1,53 @@
+{
+  "benchmark_metadata": {
+    "benchmark_type": "BENCHMARK_2_OFFLINE_MP4",
+    "video_file": "data/benchmark2/sample_beacon_tracking.mp4",
+    "ground_truth_file": "data/benchmark2/sample_beacon_tracking_gt.csv",
+    "execution_timestamp": "2026-09-02T14:42:52Z",
+    "video_resolution": {
+      "width": 640,
+      "height": 480
+    },
+    "total_video_frames": 60,
+    "video_duration_s": 1.967,
+    "source_fps": 30.0
+  },
+  "tracking_accuracy": {
+    "evaluated_frames_count": 59,
+    "mean_centroid_error_px": 3.1169,
+    "rmse_px": 10.5879,
+    "max_error_px": 54.5482,
+    "std_dev_error_px": 10.1188
+  },
+  "lock_performance": {
+    "lock_retention_rate_pct": 90.0,
+    "target_loss_rate_pct": 10.0,
+    "acquisition_time_s": 0.0,
+    "target_loss_event_count": 1,
+    "total_target_loss_duration_s": 0.2,
+    "reacquisition_time_stats": {
+      "count": 1,
+      "mean_s": 0.2,
+      "min_s": 0.2,
+      "max_s": 0.2,
+      "median_s": 0.2
+    },
+    "lock_state_frame_counts": {
+      "SEARCH": 0,
+      "ACQUIRE": 0,
+      "TRACK": 54,
+      "COAST": 5,
+      "REACQUIRE": 1
+    }
+  },
+  "system_performance": {
+    "average_processing_fps": 77.75,
+    "latency_ms_stats": {
+      "mean_ms": 12.861,
+      "median_ms": 12.59,
+      "p95_ms": 14.356,
+      "min_ms": 11.404,
+      "max_ms": 18.494
+    }
+  }
+}
