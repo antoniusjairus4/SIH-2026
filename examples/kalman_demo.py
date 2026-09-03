@@ -4,7 +4,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
-from python.estimation import BeaconStateEstimator, EstimatorConfig
+from src.estimation import BeaconStateEstimator, EstimatorConfig
 
 
 # ==============================================================

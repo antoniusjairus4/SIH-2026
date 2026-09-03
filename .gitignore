@@ -4,4 +4,6 @@ __pycache__/
 .venv/
 venv/
 examples/kalman_tracking_demo.png
+results/
+
 

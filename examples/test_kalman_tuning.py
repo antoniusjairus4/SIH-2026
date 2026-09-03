@@ -26,7 +26,7 @@ import matplotlib
 matplotlib.use("Agg")  # Non-interactive backend -- no plt.show() blocking
 import matplotlib.pyplot as plt
 
-from python.estimation import BeaconKalmanFilter
+from src.estimation import BeaconKalmanFilter
 
 # Official spec target
 SPEC_TARGET_PX = 10.0
