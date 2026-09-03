@@ -1,2 +1,7 @@
-﻿__pycache__/
+__pycache__/
 *.pyc
+.pytest_cache/
+.venv/
+venv/
+examples/kalman_tracking_demo.png
+
