@@ -1,0 +1,10 @@
+noise_std,trajectory,rmse_filtered_px,noise_reduction_factor,dead_reckoning_rmse_px,meets_spec_10px
+10.0,Straight-Line,5.8876,2.3380,6.5993,YES
+10.0,Circular,18.6396,0.7385,55.3554,NO
+10.0,Figure-8,23.5345,0.5849,60.5568,NO
+20.0,Straight-Line,11.7691,2.3392,13.1809,NO
+20.0,Circular,21.4803,1.2817,57.0832,NO
+20.0,Figure-8,26.8368,1.0258,64.8790,NO
+30.0,Straight-Line,17.6537,2.3392,19.7625,NO
+30.0,Circular,25.3904,1.6264,59.4929,NO
+30.0,Figure-8,30.9169,1.3357,69.5563,NO
