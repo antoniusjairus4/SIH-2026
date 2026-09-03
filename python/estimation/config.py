@@ -15,10 +15,11 @@ class EstimatorConfig:
 
     # Process model
     # White-noise jerk intensity used by the constant-acceleration model.
-    process_noise: float = 20.0
+    # Process noise Q_std = 8.0 -> Q_intensity = 64.0
+    process_noise: float = 64.0
 
-    # Base detector measurement variance in pixels^2.
-    measurement_noise: float = 150.0
+    # Base detector measurement variance in pixels^2 (R_std = 3.0 -> R_var = 9.0).
+    measurement_noise: float = 9.0
 
     # Initial covariance values
     initial_position_covariance: float = 100.0

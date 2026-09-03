@@ -614,3 +614,45 @@ class BeaconStateEstimator:
             inside_fov=self._inside_fov(x, y),
             timestamp=float(timestamp),
         )
+
+
+class BeaconKalmanFilter:
+    """
+    Compatibility adapter class wrapping BeaconStateEstimator for benchmark harness scripts.
+    """
+
+    def __init__(
+        self,
+        dt: float = 1.0 / 30.0,
+        process_noise_std: float = 8.0,
+        measurement_noise_std: float = 3.0,
+        max_dead_reckoning_frames: int = 30,
+    ) -> None:
+        self.dt = dt
+        cfg = EstimatorConfig(
+            process_noise=process_noise_std ** 2,
+            measurement_noise=measurement_noise_std ** 2,
+            max_coast_time=max_dead_reckoning_frames * dt,
+        )
+        self._estimator = BeaconStateEstimator(cfg)
+        self._current_time = 0.0
+
+    def predict(self) -> None:
+        """Prediction update step."""
+        pass
+
+    def update(
+        self,
+        x_meas: Optional[float],
+        y_meas: Optional[float],
+        confidence: float = 1.0,
+    ) -> Tuple[float, float, float, float]:
+        """Full predict -> update cycle returning (x_est, y_est, vx, vy)."""
+        self._current_time += self.dt
+        res = self._estimator.step(
+            x=x_meas,
+            y=y_meas,
+            confidence=confidence,
+            timestamp=self._current_time,
+        )
+        return res.x, res.y, res.vx, res.vy
