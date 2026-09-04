@@ -15,6 +15,7 @@ from src.metrics.schemas import DetectionResult
 logger = logging.getLogger("YOLOv8ONNXFallback")
 
 try:
+    # pyrefly: ignore [missing-import]
     import onnxruntime as ort
     HAS_ONNX_RUNTIME = True
 except ImportError:
