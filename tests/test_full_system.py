@@ -49,3 +49,29 @@ def test_full_system_live_pipeline_integration():
     pan, tilt = server.received_commands[0]
     assert pytest.approx(pan, 1e-4) == 0.1
     assert pytest.approx(tilt, 1e-4) == -0.05
+
+
+def test_full_system_auto_pid_control_loop():
+    """Verify live pipeline sends automatic PID commands back to Unity socket when control_callback is None."""
+    test_port = 5013
+
+    server = MockUnityServer(host="localhost", port=test_port, fps=30.0)
+    server.start()
+    time.sleep(0.2)
+
+    pipeline = TrackingSystemPipeline(host="localhost", port=test_port)
+
+    # Run live stream loop with automatic PID control loop (control_callback=None)
+    logger_result = pipeline.run_live_stream_loop(
+        duration_seconds=1.5,
+        control_callback=None,
+    )
+
+    time.sleep(0.2)
+    server.stop()
+
+    assert logger_result is not None
+    assert logger_result.total_processed_frames > 10
+    # Check that PID commands were computed and sent to socket
+    assert len(server.received_commands) > 0
+

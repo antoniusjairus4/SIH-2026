@@ -20,9 +20,16 @@ Demonstrates end-to-end live inter-module communication:
   MockUnityServer (Gimbal rotation uplink)
 """
 
+import os
+import sys
 import time
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from src.network import MockUnityServer
 from src.pipeline_runner import TrackingSystemPipeline
+from src.control import ControllerConfig, PIDController
+
 
 
 def run_full_system_demo():
