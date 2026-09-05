@@ -121,7 +121,7 @@ class SettingsDialog(QDialog):
         self.spin_port.setEnabled(is_tcp)
         self.chk_mock_server.setEnabled(is_tcp)
         self.txt_video_path.setEnabled(not is_tcp)
-        self.btn_browse.setEnabled(not is_tcp)
+        self.btn_browse.setEnabled(True)
 
     def _browse_video_file(self):
         filename, _ = QFileDialog.getOpenFileName(
@@ -132,6 +132,7 @@ class SettingsDialog(QDialog):
         )
         if filename:
             self.txt_video_path.setText(filename)
+            self.combo_source.setCurrentIndex(1)  # Automatically switch mode to Benchmark-2 Video
 
     def _init_pid_tab(self, config: Dict[str, Any]):
         tab = QWidget()

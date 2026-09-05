@@ -161,11 +161,14 @@ class TrackingPipelineWorker(QThread):
             return
 
         if "pan_kp" in config or "tilt_kp" in config:
-            self.pipeline.controller.config.kp_pan = config.get("pan_kp", self.pipeline.controller.config.kp_pan)
-            self.pipeline.controller.config.ki_pan = config.get("pan_ki", self.pipeline.controller.config.ki_pan)
-            self.pipeline.controller.config.kd_pan = config.get("pan_kd", self.pipeline.controller.config.kd_pan)
-            self.pipeline.controller.config.kp_tilt = config.get("tilt_kp", self.pipeline.controller.config.kp_tilt)
-            self.pipeline.controller.config.max_slew_rate_deg_s = config.get("max_slew_deg_s", self.pipeline.controller.config.max_slew_rate_deg_s)
+            ctrl_cfg = self.pipeline.controller.config
+            ctrl_cfg.kp_x = config.get("pan_kp", ctrl_cfg.kp_x)
+            ctrl_cfg.ki_x = config.get("pan_ki", ctrl_cfg.ki_x)
+            ctrl_cfg.kd_x = config.get("pan_kd", ctrl_cfg.kd_x)
+            ctrl_cfg.kp_y = config.get("tilt_kp", ctrl_cfg.kp_y)
+            slew_limit = config.get("max_slew_deg_s", ctrl_cfg.max_pan_speed_deg_s)
+            ctrl_cfg.max_pan_speed_deg_s = slew_limit
+            ctrl_cfg.max_tilt_speed_deg_s = slew_limit
 
         if "tophat_kernel" in config:
             self.pipeline.detector.fast_path.tophat_kernel_size = config.get("tophat_kernel", 15)
