@@ -15,13 +15,11 @@ simulates closed-loop camera pan/tilt tracking, and produces:
     4. Comparative visualization plots ('pid_tuning_results.png').
 """
 
-from pyparsing import Optional
 import csv
 import math
 import os
 import sys
-from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import matplotlib
 matplotlib.use("Agg")

@@ -3,8 +3,10 @@ Header Widget Component for FSOC Optical Simulator GUI.
 Renders title banner and simulation status pulse indicator.
 """
 
+# pyrefly: ignore [missing-import]
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
+# pyrefly: ignore [missing-import]
+from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
 
 
 class HeaderWidget(QFrame):

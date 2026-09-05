@@ -5,7 +5,7 @@ Renders live 640x480 RGB camera frame with target crosshair overlays matching wi
 
 import numpy as np
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPen, QPixmap
+from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPixmap
 from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
 
 

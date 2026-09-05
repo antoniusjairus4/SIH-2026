@@ -1,6 +1,6 @@
 """
 Control Footer Component for FSOC Optical Simulator GUI.
-Renders action buttons: [ ▶ START ], [ ⏸ PAUSE ], [ ■ STOP ], [ ↻ RESET ], [ ⚙ SETTINGS ], [ 💾 EXPORT LOGS ].
+Renders action buttons: [ ▶ START ], [ ⏸ PAUSE ], [ ■ STOP ], [ ↻ RESET ], [ ⚙ SETTINGS ].
 """
 
 from PyQt6.QtCore import pyqtSignal
@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QSizePolicy
 
 
 class ControlFooterWidget(QFrame):
-    """Bottom control toolbar displaying operational control buttons."""
+    """Bottom control toolbar displaying operational control buttons matching exact wireframe."""
 
     # Custom signals for button actions
     start_requested = pyqtSignal()
@@ -16,7 +16,6 @@ class ControlFooterWidget(QFrame):
     stop_requested = pyqtSignal()
     reset_requested = pyqtSignal()
     settings_requested = pyqtSignal()
-    export_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -24,7 +23,7 @@ class ControlFooterWidget(QFrame):
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(10)
+        layout.setSpacing(12)
 
         # Buttons
         self.btn_start = QPushButton("[ ▶ START ]")
@@ -44,10 +43,6 @@ class ControlFooterWidget(QFrame):
         self.btn_settings = QPushButton("[ ⚙ SETTINGS ]")
         self.btn_settings.clicked.connect(self.settings_requested.emit)
 
-        self.btn_export = QPushButton("[ 💾 EXPORT LOGS ]")
-        self.btn_export.setObjectName("btn-export")
-        self.btn_export.clicked.connect(self.export_requested.emit)
-
         # Expand buttons evenly
         for btn in (
             self.btn_start,
@@ -55,7 +50,6 @@ class ControlFooterWidget(QFrame):
             self.btn_stop,
             self.btn_reset,
             self.btn_settings,
-            self.btn_export,
         ):
             btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             layout.addWidget(btn)

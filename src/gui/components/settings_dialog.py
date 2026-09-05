@@ -9,7 +9,7 @@ Provides interactive controls for adjusting system settings:
 """
 
 from typing import Dict, Any, Optional
-from PyQt6.QtCore import Qt
+# pyrefly: ignore [missing-import]
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -19,7 +19,6 @@ from PyQt6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
     QPushButton,
     QSpinBox,

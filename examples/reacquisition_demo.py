@@ -5,20 +5,17 @@ Demonstrates Archimedean Spiral Reacquisition when target is lost for > 0.5 s (1
 Plots the camera pan/tilt trajectory, spiral radius expansion, and FSM state timeline.
 """
 
-import math
 import os
 import sys
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
 
 # Ensure project root is on sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.control import ReacquisitionEngine, ReacquisitionState
-from src.estimation import BeaconStateEstimator, EstimatorConfig
+from src.control import ReacquisitionEngine
 from src.estimation.state import TrackerMode, EstimatorResult
 
 OUTPUT_PLOT = "reacquisition_demo_output.png"

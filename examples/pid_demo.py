@@ -29,7 +29,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from src.estimation import BeaconStateEstimator, EstimatorConfig
-from src.estimation.state import TrackerMode
 from src.control import ControllerConfig, PIDController
 
 

@@ -15,7 +15,6 @@ from PyQt6.QtCore import QThread, pyqtSignal
 
 from src.network import MockUnityServer
 from src.pipeline_runner import TrackingSystemPipeline
-from src.metrics.schemas import TelemetryRecord
 
 
 class TrackingPipelineWorker(QThread):
