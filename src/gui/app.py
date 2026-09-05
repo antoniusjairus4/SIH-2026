@@ -195,6 +195,7 @@ class FSOCDesktopApp(QMainWindow):
         if self.worker is not None and self.worker.isRunning():
             self.worker.resume()
             self.header_widget.set_running(True)
+            self.control_footer.set_paused(False)
             return
 
         self.worker = TrackingPipelineWorker(
@@ -208,13 +209,20 @@ class FSOCDesktopApp(QMainWindow):
         self.worker.start()
 
         self.header_widget.set_running(True)
+        self.control_footer.set_paused(False)
         self.telemetry_bar.update_telemetry(fps=60.0, connected=True, latency_ms=12.0, packets=1248)
 
     def on_pause(self):
-        """Pause button handler."""
-        if self.worker:
-            self.worker.pause()
-            self.header_widget.set_running(False)
+        """Pause/Resume toggle button handler."""
+        if self.worker is not None and self.worker.isRunning():
+            if self.worker.is_paused():
+                self.worker.resume()
+                self.header_widget.set_running(True)
+                self.control_footer.set_paused(False)
+            else:
+                self.worker.pause()
+                self.header_widget.set_running(False)
+                self.control_footer.set_paused(True)
 
     def on_stop(self):
         """Stop button handler."""
@@ -223,6 +231,7 @@ class FSOCDesktopApp(QMainWindow):
             self.worker = None
 
         self.header_widget.set_running(False)
+        self.control_footer.set_paused(False)
         self.telemetry_bar.update_telemetry(fps=0.0, connected=False, latency_ms=0.0, packets=0)
 
     def on_reset(self):
@@ -235,9 +244,11 @@ class FSOCDesktopApp(QMainWindow):
 
     def on_settings(self):
         """Open Settings Dialog for adjusting parameters."""
-        was_running = (self.worker is not None and self.worker.isRunning())
+        was_running = (self.worker is not None and self.worker.isRunning() and not self.worker.is_paused())
         if was_running:
-            self.on_pause()
+            self.worker.pause()
+            self.header_widget.set_running(False)
+            self.control_footer.set_paused(True)
 
         dialog = SettingsDialog(self.current_config, parent=self)
         if dialog.exec() == SettingsDialog.DialogCode.Accepted:

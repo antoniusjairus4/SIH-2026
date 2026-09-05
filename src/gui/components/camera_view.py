@@ -4,8 +4,11 @@ Renders live 640x480 RGB camera frame with target crosshair overlays matching wi
 """
 
 import numpy as np
+# pyrefly: ignore [missing-import]
 from PyQt6.QtCore import Qt
+# pyrefly: ignore [missing-import]
 from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPixmap
+# pyrefly: ignore [missing-import]
 from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
 
 
@@ -66,14 +69,21 @@ class CameraViewWidget(QFrame):
         cx = int(target_x) if target_x is not None else w // 2
         cy = int(target_y) if target_y is not None else h // 2
 
-        # ✦ Symbol
-        painter.setPen(QColor(248, 250, 252))
-        painter.setFont(QFont("Consolas", 14, QFont.Weight.Bold))
-        painter.drawText(cx - 7, cy - 4, "✦")
+        # Color: Bright Red (#ef4444) when detected/locked, Slate Gray otherwise
+        if detected:
+            marker_color = QColor(239, 68, 68)  # Red for Target Lock
+        else:
+            marker_color = QColor(148, 163, 184)  # Slate Gray when searching
+
+        # Solid Beacon Dot at (cx, cy)
+        painter.setBrush(marker_color)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(cx - 6, cy - 6, 12, 12)
 
         # BEACON Label
+        painter.setPen(marker_color)
         painter.setFont(QFont("Consolas", 10, QFont.Weight.Bold))
-        painter.drawText(cx - 24, cy + 16, "BEACON")
+        painter.drawText(cx - 24, cy + 18, "BEACON")
 
         painter.end()
 

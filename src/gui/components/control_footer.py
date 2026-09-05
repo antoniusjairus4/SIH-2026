@@ -3,7 +3,9 @@ Control Footer Component for FSOC Optical Simulator GUI.
 Renders action buttons: [ ▶ START ], [ ⏸ PAUSE ], [ ■ STOP ], [ ↻ RESET ], [ ⚙ SETTINGS ].
 """
 
+# pyrefly: ignore [missing-import]
 from PyQt6.QtCore import pyqtSignal
+# pyrefly: ignore [missing-import]
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QSizePolicy
 
 
@@ -53,3 +55,11 @@ class ControlFooterWidget(QFrame):
         ):
             btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             layout.addWidget(btn)
+
+    def set_paused(self, is_paused: bool):
+        """Toggle pause button text between PAUSE and RESUME."""
+        if is_paused:
+            self.btn_pause.setText("[ ▶ RESUME ]")
+        else:
+            self.btn_pause.setText("[ ⏸ PAUSE ]")
+

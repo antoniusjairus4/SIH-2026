@@ -8,6 +8,7 @@ Provides interactive controls for adjusting system settings:
   - Synthetic Noise & Atmospheric Disturbance injection
 """
 
+import os
 from typing import Dict, Any, Optional
 # pyrefly: ignore [missing-import]
 from PyQt6.QtWidgets import (
@@ -102,7 +103,8 @@ class SettingsDialog(QDialog):
 
         # Video File Selection
         video_layout = QHBoxLayout()
-        self.txt_video_path = QLineEdit(config.get("video_file_path", ""))
+        default_v_path = config.get("video_file_path") or os.path.abspath("data/benchmark2/sample_beacon_tracking.mp4")
+        self.txt_video_path = QLineEdit(default_v_path if os.path.exists(default_v_path) else "")
         self.txt_video_path.setPlaceholderText("Select pre-recorded .mp4 file...")
         self.btn_browse = QPushButton("Browse...")
         self.btn_browse.clicked.connect(self._browse_video_file)
@@ -124,10 +126,11 @@ class SettingsDialog(QDialog):
         self.btn_browse.setEnabled(True)
 
     def _browse_video_file(self):
+        initial_dir = os.path.abspath("data/benchmark2") if os.path.exists("data/benchmark2") else ""
         filename, _ = QFileDialog.getOpenFileName(
             self,
             "Select Pre-recorded MP4 Video File",
-            "",
+            initial_dir,
             "Video Files (*.mp4 *.avi *.mkv);;All Files (*)",
         )
         if filename:

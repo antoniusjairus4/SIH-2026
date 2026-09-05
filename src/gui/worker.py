@@ -191,7 +191,12 @@ class TrackingPipelineWorker(QThread):
         """Resume worker pipeline execution."""
         self._paused = False
 
+    def is_paused(self) -> bool:
+        """Return True if worker is in paused state."""
+        return self._paused
+
     def stop(self):
         """Stop worker thread loop."""
         self._running = False
         self.wait(2000)
+
