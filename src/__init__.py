@@ -11,6 +11,7 @@ from .control import (
     ReacquisitionResult,
     ReacquisitionState,
 )
+from .gui import FSOCDesktopApp
 
 __all__ = [
     "TrackingSystemPipeline",
@@ -20,6 +21,8 @@ __all__ = [
     "ReacquisitionEngine",
     "ReacquisitionResult",
     "ReacquisitionState",
+    "FSOCDesktopApp",
 ]
+
 
 

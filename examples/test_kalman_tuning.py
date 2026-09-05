@@ -21,12 +21,13 @@ import csv
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-import numpy as np
-import matplotlib
-matplotlib.use("Agg")  # Non-interactive backend -- no plt.show() blocking
-import matplotlib.pyplot as plt
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.estimation import BeaconKalmanFilter
+
 
 # Official spec target
 SPEC_TARGET_PX = 10.0
