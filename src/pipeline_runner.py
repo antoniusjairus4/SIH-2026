@@ -22,6 +22,7 @@ from src.estimation.kalman_filter import BeaconStateEstimator
 from src.control.pid_controller import PIDController
 from src.control.config import ControllerConfig
 from src.control.state import ControlResult
+from src.control.reacquisition import ReacquisitionEngine, ReacquisitionResult, ReacquisitionState
 from src.metrics.metric_logger import MetricLogger
 from src.metrics.schemas import TelemetryRecord, LockState
 from src.benchmark.benchmark2_runner import Benchmark2Runner
@@ -42,6 +43,7 @@ class TrackingSystemPipeline:
         detector: Optional[BeaconDetector] = None,
         estimator: Optional[BeaconStateEstimator] = None,
         controller: Optional[PIDController] = None,
+        reacquisition_engine: Optional[ReacquisitionEngine] = None,
         output_dir: str = "results",
     ) -> None:
         self.host = host
@@ -51,6 +53,7 @@ class TrackingSystemPipeline:
         self.detector = detector or BeaconDetector()
         self.estimator = estimator or BeaconStateEstimator()
         self.controller = controller or PIDController()
+        self.reacquisition_engine = reacquisition_engine or ReacquisitionEngine()
         self.network_client = TCPNetworkClient(host=host, port=port)
         self.metric_logger: Optional[MetricLogger] = None
 
@@ -60,9 +63,10 @@ class TrackingSystemPipeline:
         self._running = False
 
     def reset(self) -> None:
-        """Reset internal estimator, controller, and tracking states."""
+        """Reset internal estimator, controller, reacquisition engine, and tracking states."""
         self.estimator.reset()
         self.controller.reset()
+        self.reacquisition_engine.reset()
         self.current_pan_deg = 0.0
         self.current_tilt_deg = 0.0
         self._last_timestamp = None
@@ -75,11 +79,11 @@ class TrackingSystemPipeline:
         dt: Optional[float] = None,
     ) -> TelemetryRecord:
         """
-        Executes a single frame through Perception -> Estimation -> Control pipeline.
+        Executes a single frame through Perception -> Estimation -> Control -> Reacquisition pipeline.
 
         1. Perception: Runs Fast Path CV (or ONNX Fallback) to detect beacon centroid (cx, cy).
         2. Estimation: Runs 6D CA Kalman Filter to smooth jitter and predict trajectory.
-        3. Control: Runs PID Controller to calculate angular pan/tilt commands.
+        3. Control: Runs PID Controller for tracking, or Reacquisition Engine for Archimedean spiral search.
         4. Returns: TelemetryRecord contract for telemetry & metric logging.
         """
         t_start = time.perf_counter()
@@ -95,7 +99,7 @@ class TrackingSystemPipeline:
             timestamp=timestamp,
         )
 
-        # Calculate time step dt for PID loop
+        # Calculate time step dt for control loops
         if dt is None:
             if self._last_timestamp is not None and timestamp > self._last_timestamp:
                 dt = timestamp - self._last_timestamp
@@ -111,9 +115,34 @@ class TrackingSystemPipeline:
             dt=dt,
         )
 
+        # Step 4: Reacquisition (Archimedean Spiral Engine Compute)
+        reacq_result = self.reacquisition_engine.update(
+            estimator_result=est_result,
+            current_pan_deg=self.current_pan_deg,
+            current_tilt_deg=self.current_tilt_deg,
+            dt=dt,
+        )
+
+        # Determine active command source
         if ctrl_result.should_command:
-            self.current_pan_deg += ctrl_result.pan_delta
-            self.current_tilt_deg += ctrl_result.tilt_delta
+            pan_delta = ctrl_result.pan_delta
+            tilt_delta = ctrl_result.tilt_delta
+            should_cmd = True
+            control_source = "PID"
+        elif reacq_result.should_command:
+            pan_delta = reacq_result.pan_delta
+            tilt_delta = reacq_result.tilt_delta
+            should_cmd = True
+            control_source = "REACQUISITION_SPIRAL"
+        else:
+            pan_delta = 0.0
+            tilt_delta = 0.0
+            should_cmd = False
+            control_source = "NONE"
+
+        if should_cmd:
+            self.current_pan_deg += pan_delta
+            self.current_tilt_deg += tilt_delta
 
         t_end = time.perf_counter()
         latency_ms = (t_end - t_start) * 1000.0
@@ -149,15 +178,20 @@ class TrackingSystemPipeline:
                 "vy": est_result.vy,
                 "predicted_x": est_result.predicted_x,
                 "predicted_y": est_result.predicted_y,
-                "pan_delta": ctrl_result.pan_delta,
-                "tilt_delta": ctrl_result.tilt_delta,
-                "should_command": ctrl_result.should_command,
+                "pan_delta": pan_delta,
+                "tilt_delta": tilt_delta,
+                "should_command": should_cmd,
+                "control_source": control_source,
                 "raw_error_x_deg": ctrl_result.raw_error_x_deg,
                 "raw_error_y_deg": ctrl_result.raw_error_y_deg,
+                "reacq_state": reacq_result.state.value,
+                "is_reacquiring": reacq_result.should_command,
+                "spiral_radius_deg": reacq_result.spiral_radius_deg,
                 "current_pan_deg": self.current_pan_deg,
                 "current_tilt_deg": self.current_tilt_deg,
             },
         )
+
 
     def run_live_stream_loop(
         self,
