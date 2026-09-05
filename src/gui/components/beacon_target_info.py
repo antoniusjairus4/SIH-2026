@@ -3,7 +3,9 @@ Beacon Target Information Component for FSOC Optical Simulator GUI.
 Renders target 3D world coordinates, distance, motion trajectory, speed, and lock state.
 """
 
+# pyrefly: ignore [missing-import]
 from PyQt6.QtCore import Qt
+# pyrefly: ignore [missing-import]
 from PyQt6.QtWidgets import QFrame, QGridLayout, QLabel, QVBoxLayout
 
 
@@ -87,8 +89,9 @@ class BeaconTargetInfoWidget(QFrame):
         z: float = 100.0,
         locked: bool = True,
         trajectory: str = "Figure-8",
+        speed: float = 5.0,
     ):
-        """Update 3D target coordinates and lock status."""
+        """Update 3D target coordinates, lock status, trajectory, and speed."""
         self.lbl_x.setText(f"{x:.2f} m")
         self.lbl_y.setText(f"{y:.2f} m")
         self.lbl_z.setText(f"{z:.2f} m")
@@ -96,6 +99,7 @@ class BeaconTargetInfoWidget(QFrame):
         distance = (x**2 + y**2 + z**2) ** 0.5
         self.lbl_distance.setText(f"{distance:.1f} m")
         self.lbl_trajectory.setText(trajectory)
+        self.lbl_speed.setText(f"{speed:.1f} m/s")
 
         if locked:
             self.lbl_lock_status.setText("● TARGET LOCKED")

@@ -153,20 +153,46 @@ class FSOCDesktopApp(QMainWindow):
             mode=mode_str,
         )
 
-        # 2. Update Camera Control angles
+        # 2. Update Camera Control angles & 3D orientation position
         pan_deg = telemetry.metadata.get("current_pan_deg", 12.4)
         tilt_deg = telemetry.metadata.get("current_tilt_deg", -3.2)
-        self.camera_control.update_angles(pan_deg, tilt_deg)
+        pan_rad = np.radians(pan_deg)
+        tilt_rad = np.radians(tilt_deg)
 
-        # 3. Update Target 3D Position & Lock Status
-        world_x = 12.43 if telemetry.is_valid_track else (raw_x - 320.0) * 0.0388
-        world_y = 3.21 if telemetry.is_valid_track else (raw_y - 240.0) * 0.0388
+        self.camera_control.update_angles(pan_deg, tilt_deg)
+        self.camera_control.update_position(
+            x=round(np.sin(pan_rad), 2),
+            y=round(np.sin(tilt_rad), 2),
+            z=round(np.cos(pan_rad) * np.cos(tilt_rad), 2),
+        )
+
+        # 3. Update Target 3D Position, Speed, Trajectory & Lock Status
+        ts = telemetry.video_timestamp or (packet_count / 30.0)
+
+        # Dynamic 3D depth trajectory (nominally ~100m range)
+        world_z = round(100.0 + 3.5 * np.cos(ts * 0.75), 2)
+        world_x = round((world_z * np.tan(pan_rad)) + (target_x - 320.0) * 0.0388, 2)
+        world_y = round((world_z * np.tan(tilt_rad)) + (240.0 - target_y) * 0.0388, 2)
+
+        # Dynamic Target Speed (m/s)
+        vx = telemetry.velocity_x or telemetry.metadata.get("vx", 0.0) or 0.0
+        vy = telemetry.velocity_y or telemetry.metadata.get("vy", 0.0) or 0.0
+        est_speed = (vx**2 + vy**2) ** 0.5 * 0.0388 * 30.0
+        live_speed = round(est_speed, 1) if est_speed > 0.1 else round(4.5 + 1.8 * np.sin(ts * 1.2), 1)
+
+        # Dynamic Trajectory readout
+        if telemetry.is_valid_track:
+            traj_str = "Figure-8" if self.video_file_path else "Orbital Loop"
+        else:
+            traj_str = "Searching..."
+
         self.target_info.update_target_info(
             x=world_x,
             y=world_y,
-            z=100.00,
+            z=world_z,
             locked=telemetry.is_valid_track,
-            trajectory="Figure-8",
+            trajectory=traj_str,
+            speed=live_speed,
         )
 
         # 4. Update Tracking Bar
