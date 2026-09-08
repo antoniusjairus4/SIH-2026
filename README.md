@@ -170,6 +170,40 @@ This project delivers a software-based virtual camera tracking system providing 
   * Dual-Axis PID controller with anti-windup clamping and motor slew clamping ($\le 5^\circ/\text{s}$).
   * Reacquisition State Machine: Triggers Archimedean spiral search pattern when target is lost $>0.5\text{ s}$, re-acquiring lock in $\le 1.0\text{ s}$.
 
+#### 🌀 Archimedean Spiral Search Engine & Mathematical Formulation
+The **Archimedean Spiral Reacquisition Engine** ([reacquisition.py](file:///home/jairus/Antonius%20Jairus/Hackathons/SIH%20-2026/src/control/reacquisition.py)) provides optimal 2D area coverage around the last known beacon position when target lock is lost for $> 0.5\text{ s}$ (15 frames @ 30Hz), guaranteeing re-acquisition in $\le 1.0\text{ s}$ without unsearched gaps or gimbal torque spikes.
+
+1. **Polar Radius Expansion Equation:**
+   \[
+   r(\theta) = b \cdot \theta, \quad b = \frac{\text{spiral\_pitch\_deg}}{2\pi} = \frac{1.0^\circ}{2\pi} \approx 0.15915^\circ/\text{rad}
+   \]
+   where $\theta$ is the cumulative swept angle (radians) and $1.0^\circ$ is the constant radial spacing per $360^\circ$ revolution.
+
+2. **Constant Tangential Speed Sweep ($\omega$):**
+   Physical gimbal motors are constrained by max slew rate $v_{\text{max}} = 5.0^\circ/\text{s}$. To sweep at maximum allowable linear speed without over-speeding near the origin:
+   \[
+   \omega(\theta) = \frac{v_{\text{max}}}{\max(r(\theta), r_{\text{min}})}, \quad (r_{\text{min}} = 0.1^\circ \text{ prevents singularity})
+   \]
+   \[
+   \theta_{k+1} = \theta_k + \omega(\theta) \cdot \Delta t
+   \]
+
+3. **Cartesian Gimbal Target Offsets:**
+   Given last known beacon coordinates $(\text{pan}_0, \text{tilt}_0)$:
+   \[
+   \text{Target Pan}(\theta) = \text{pan}_0 + r(\theta) \cdot \cos(\theta)
+   \]
+   \[
+   \text{Target Tilt}(\theta) = \text{tilt}_0 + r(\theta) \cdot \sin(\theta)
+   \]
+
+4. **FSM State Transitions:**
+   - `IDLE` $\rightarrow$ Target actively tracked ($\text{confidence} \ge 0.6$).
+   - `COASTING` $\rightarrow$ Target dropout $\le 0.5\text{ s}$; Kalman filter dead-reckoning active.
+   - `SPIRAL_SEARCHING` $\rightarrow$ Target lost $> 0.5\text{ s}$; Archimedean spiral engine commands gimbal.
+   - `REACQUIRED` $\rightarrow$ Target re-detected ($\text{confidence} \ge 0.6$); angle $\theta$ resets to 0 and control hands back to primary PID.
+
+
 ---
 
 ### Module 6: Performance Logger, Analytics & Unified Desktop Launcher
