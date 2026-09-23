@@ -15,8 +15,8 @@ class EstimatorConfig:
 
     # Process model
     # White-noise jerk intensity used by the constant-acceleration model.
-    # Process noise Q_std = 8.0 -> Q_intensity = 64.0
-    process_noise: float = 64.0
+    # Process noise Q_std = 100.0 -> Q_intensity = 10000.0
+    process_noise: float = 10000.0
 
     # Base detector measurement variance in pixels^2 (R_std = 3.0 -> R_var = 9.0).
     measurement_noise: float = 9.0
@@ -33,10 +33,10 @@ class EstimatorConfig:
     min_confidence: float = 0.05
     confidence_noise_scaling: float = 2.0
 
-    # Mahalanobis squared-distance threshold.
-    # 9.21 corresponds approximately to a 99% chi-square threshold
-    # for a 2-dimensional measurement.
-    gating_threshold: float = 9.21
+    # Mahalanobis squared-distance threshold for measurement gating.
+    # Set to 500.0 to allow high-acceleration circular & figure-8 maneuvers
+    # without false rejection of valid detections.
+    gating_threshold: float = 500.0
 
     # Timestamp protection
     min_dt: float = 1e-3
