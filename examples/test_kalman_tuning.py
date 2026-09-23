@@ -184,6 +184,7 @@ def run_filter(
         dt=dt,
         process_noise_std=process_noise_std,
         measurement_noise_std=measurement_noise_std,
+        gating_threshold=500.0,
     )
 
     filtered = np.zeros((num_frames, 2), dtype=np.float64)
@@ -530,8 +531,8 @@ if __name__ == "__main__":
     print("  PHASE 1: Multi-trajectory Grid Search (optimising for RMSE <= 10px)")
     print("=" * 70)
 
-    Q_VALUES = [3, 5, 8, 10, 12, 15, 18, 20, 25, 30]
-    R_VALUES = [1, 2, 3, 4, 5, 6, 8, 10]
+    Q_VALUES = [10, 20, 30, 50, 80, 100, 120, 150, 200]
+    R_VALUES = [3, 5, 8, 10, 12, 15]
 
     scores = multi_trajectory_grid_search(
         trajectories=trajectories,

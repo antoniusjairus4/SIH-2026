@@ -627,7 +627,7 @@ class BeaconKalmanFilter:
         process_noise_std: float = 8.0,
         measurement_noise_std: float = 3.0,
         max_dead_reckoning_frames: int = 30,
-        gating_threshold: float = 100.0,
+        gating_threshold: float = 500.0,
     ) -> None:
         self.dt = dt
         cfg = EstimatorConfig(
